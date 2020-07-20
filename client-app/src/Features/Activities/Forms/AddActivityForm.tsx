@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from "react";
-import { Form, Segment } from "semantic-ui-react";
+import { Form, Segment, Button } from "semantic-ui-react";
 import { IActivity } from "../../../Models/IActivity";
 import {v4 as uuid} from 'uuid';
 interface IProps {
@@ -7,12 +7,14 @@ interface IProps {
   initialActivity: IActivity;
   addActivity: (activity: IActivity) => void;
   editActivity: (activity: IActivity) => void;
+  submitting: boolean;
 }
 const AddActivityForm: React.FC<IProps> = ({
   setEditMode,
   initialActivity,
   addActivity,
   editActivity,
+  submitting
 }) => {
   const initialState = () => {
     if (initialActivity) {
@@ -81,8 +83,9 @@ const AddActivityForm: React.FC<IProps> = ({
         <Form.Input
           onChange={formEntry}
           name="date"
-          type="datetime"
+          type="datetime-Local"
           value={activity.date}
+          placeholder="Date"
         />
         <Form.Input
           onChange={formEntry}
@@ -96,14 +99,15 @@ const AddActivityForm: React.FC<IProps> = ({
           value={activity.venue}
           placeholder='Venue'
         />
-        <Form.Button
+        <Button
+          loading={submitting}
           positive
           content="Save"
           color="blue"
           type="submit"
           floated="right"
         />
-        <Form.Button
+        <Button
           content="Cancel"
           color="grey"
           type="button"

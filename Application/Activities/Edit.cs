@@ -40,7 +40,7 @@ namespace Application.Activities
                 activity.Description = request.Description ?? activity.Description;
                 activity.City = request.City ?? activity.City;
                 activity.Category = request.Category ?? activity.Category;
-                this.context.Add(activity);
+                //this.context.Add(activity);
                 bool success = await this.context.SaveChangesAsync() > 0;
                 if(!success){
                     throw new Exception("Cannot save data");

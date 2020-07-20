@@ -1,51 +1,84 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, SyntheticEvent } from "react";
 import "../Layouts/styles.css";
-import axios from "axios";
 import { IActivity } from "../../Models/IActivity";
 import { Container } from "semantic-ui-react";
 import NavBar from "../../Features/Navigation/NavBar";
 import ActivitiesDashboard from "../../Features/Activities/ActivitiesDashboard";
-
+import agent from "./API/agent";
+import LoadingComponent from "./LoadingComponent";
 const App = () => {
   const [activities, setActivities] = useState<IActivity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<IActivity | null>(
     null
   );
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [target, setTarget] = useState('');
   const selectActivityHandler = (id: string) => {
-    setSelectedActivity(() => activities.filter((a) => a.id === id)[0]);
-    setEditMode(false);
+    agent.Activities.details(id).then(() => {
+      setSelectedActivity(() => activities.filter((a) => a.id === id)[0]);
+      setEditMode(false);
+    });
   };
-  const setEditModeHandler = (editmode:boolean) =>{
+  const setEditModeHandler = (editmode: boolean) => {
     setEditMode(editmode);
-  }
-  const openActivityFormHandler = () =>{
+  };
+  const openActivityFormHandler = () => {
     setSelectedActivity(null);
     setEditMode(true);
-  }
+  };
   const addActivityHandler = (activity: IActivity) => {
-    setActivities([...activities, activity]);
-  }
+    setSubmitting(true);
+    agent.Activities.create(activity)
+      .then(() => {
+        setActivities([...activities, activity]);
+        setSelectedActivity(activity);
+        setEditMode(false);
+      })
+      .then(() => setSubmitting(false));
+  };
   const editActivityHandler = (activity: IActivity) => {
-    setActivities([...activities.filter(a => a.id !== activity.id), activity]);
-  }
-  const deleteActivityHandler = (id: string) => {
-    setActivities([...activities.filter(a => a.id !== id)]);
-  }
+    setSubmitting(true);
+    agent.Activities.update(activity)
+      .then(() => {
+        setActivities([
+          ...activities.filter((a) => a.id !== activity.id),
+          activity,
+        ]);
+        setSelectedActivity(activity);
+        setEditMode(false);
+      })
+      .then(() => setSubmitting(false));
+  };
+  const deleteActivityHandler = (
+    e: SyntheticEvent<HTMLButtonElement>,
+    id: string
+  ) => {
+      setSubmitting(true);
+      setTarget(e.currentTarget.name);
+    agent.Activities.delete(id)
+      .then(() => {
+        setActivities([...activities.filter((a) => a.id !== id)]);
+        setSelectedActivity(null);
+      })
+      .then(() => setSubmitting(false));
+  };
   useEffect(() => {
-    axios
-      .get<IActivity[]>("http://localhost:5000/api/activities")
+    agent.Activities.list()
       .then((response) => {
         const newActivities: IActivity[] = [];
-        response.data.forEach(
-          a => {
-            a.date = a.date.split('.')[0];
-            newActivities.push(a);
-          });
+        response.forEach((a) => {
+          a.date = a.date.split(".")[0];
+          newActivities.push(a);
+        });
         setActivities(newActivities);
-      });
+      })
+      .then(() => setLoading(false));
   }, []);
-
+  if (loading) {
+    return <LoadingComponent loadingContent="Loading Activities..." />;
+  }
   return (
     <Fragment>
       <NavBar openActivityFormHandler={openActivityFormHandler} />
@@ -57,10 +90,12 @@ const App = () => {
           activity={selectedActivity}
           editMode={editMode}
           setEditMode={setEditModeHandler}
-          setSelectedActivity = {setSelectedActivity}
-          addActivity = {addActivityHandler}
-          editActivity = {editActivityHandler}
-          deleteActivity = {deleteActivityHandler}
+          setSelectedActivity={setSelectedActivity}
+          addActivity={addActivityHandler}
+          editActivity={editActivityHandler}
+          deleteActivity={deleteActivityHandler}
+          submitting={submitting}
+          target={target}
         />
       </Container>
     </Fragment>
